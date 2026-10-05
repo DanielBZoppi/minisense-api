@@ -38,3 +38,30 @@ Para executar a aplicação localmente, certifique-se de ter instalado em sua m�
 ```bash
 git clone [https://github.com/seu-usuario/minisense-api.git](https://github.com/seu-usuario/minisense-api.git)
 cd minisense-api
+
+### 2. Criar o arquivo de variáveis de ambiente (.env):
+Crie um arquivo .env na raiz do projeto contendo:
+
+Snippet de código
+PORT=3000
+DATABASE_URL="postgresql://postgres:postgres@postgres:5432/meu_projeto?schema=public"
+
+### 3. Subir os containers (API + PostgreSQL):
+O Docker Compose se encarregará de instalar os pacotes do package.json, rodar o build do TypeScript, aplicar as migrations do prisma e iniciar a aplicação:
+
+Bash
+docker compose up -d --build
+4. Executar as Migrations e Seed do Banco de Dados:
+Para popular o banco com as unidades de medida padrão e garantir o usuário inicial:
+
+Bash
+docker compose exec api npx prisma db seed
+🔍 Como Testar e Acessar
+Swagger (Documentação Interativa): http://localhost:3000/docs
+
+Health Check: http://localhost:3000/health
+
+Executar os Testes Automatizados:
+
+Bash
+docker compose exec api npm run test
