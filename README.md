@@ -1,67 +1,208 @@
-# 📡 MiniSense API
+📡 MiniSense API
+API REST para gerenciamento e monitoramento de dispositivos de sensores (IoT), streams de dados e medições.
 
-API REST para gerenciamento e monitoramento de dispositivos de sensores (IoT), streams de dados e medições de medição. Desenvolvida em **Node.js** com **TypeScript**, **Express**, **Prisma ORM** e banco de dados **PostgreSQL**, totalmente containerizada via **Docker**.
+Desenvolvida com Node.js, TypeScript, Express, Prisma ORM e PostgreSQL, totalmente containerizada com Docker e Docker Compose.
 
-<Image src="image_agent_tag_10616766519917896423" alt="Arquitetura do backend Node.js com Prisma e PostgreSQL" caption="Arquitetura de Backend com Node.js, Prisma e PostgreSQL" />
+🛠️ Tecnologias Utilizadas
+Linguagem: TypeScript
 
----
+Runtime: Node.js v22
 
-## 🛠️ Tecnologias Utilizadas
+Framework Web: Express
 
-* **Linguagem:** TypeScript
-* **Runtime:** Node.js (v22)
-* **Framework Web:** Express
-* **ORM:** Prisma
-* **Banco de Dados:** PostgreSQL
-* **Validação / Utilitários:** Zod, Crypto
-* **Testes:** Vitest, Supertest
-* **Containerização:** Docker & Docker Compose
+ORM: Prisma
 
----
+Banco de Dados: PostgreSQL
 
-## 🚀 Pré-requisitos
+Validação e utilitários: Zod, Crypto
 
-Para executar a aplicação localmente, certifique-se de ter instalado em sua máquina:
+Testes: Vitest, Supertest
 
-* [Docker](https://docs.docker.com/get-docker/) e [Docker Compose](https://docs.docker.com/compose/install/)
-* [Git](https://git-scm.com/)
+Containerização: Docker e Docker Compose
 
-*(Opcional caso queira rodar sem Docker)*:
-* [Node.js](https://nodejs.org/) (v22.x ou superior)
-* [npm](https://www.npmjs.com/)
+🚀 Pré-requisitos
+Para executar a aplicação localmente, certifique-se de ter instalado:
 
----
+Docker
 
-## 📦 Passos para Instalação e Execução
+Docker Compose
 
-### 1. Clonar o repositório
-```bash
-git clone [https://github.com/seu-usuario/minisense-api.git](https://github.com/seu-usuario/minisense-api.git)
+Git
+
+Opcional — execução sem Docker
+Caso queira executar a aplicação diretamente na máquina, também será necessário:
+
+Node.js v22.x ou superior
+
+npm
+
+📦 Instalação e Execução
+1. Clonar o repositório
+git clone https://github.com/seu-usuario/minisense-api.git
 cd minisense-api
 
-### 2. Criar o arquivo de variáveis de ambiente (.env):
-Crie um arquivo .env na raiz do projeto contendo:
+2. Criar o arquivo de variáveis de ambiente
+Crie um arquivo .env na raiz do projeto:
 
-Snippet de código
 PORT=3000
 DATABASE_URL="postgresql://postgres:postgres@postgres:5432/meu_projeto?schema=public"
 
-### 3. Subir os containers (API + PostgreSQL):
-O Docker Compose se encarregará de instalar os pacotes do package.json, rodar o build do TypeScript, aplicar as migrations do prisma e iniciar a aplicação:
+Importante: ajuste a DATABASE_URL caso as credenciais, porta ou nome do banco sejam diferentes no seu ambiente.
 
-Bash
+3. Subir os containers
+O Docker Compose será responsável por iniciar os serviços necessários, instalar as dependências, realizar o build da aplicação e iniciar os containers.
+
 docker compose up -d --build
-4. Executar as Migrations e Seed do Banco de Dados:
-Para popular o banco com as unidades de medida padrão e garantir o usuário inicial:
 
-Bash
+Para acompanhar os logs:
+
+docker compose logs -f
+
+4. Executar as migrations e o seed
+Após os containers estarem em execução, aplique as migrations do Prisma:
+
+docker compose exec api npx prisma migrate deploy
+
+Em seguida, execute o seed para popular o banco de dados com as unidades de medida padrão e garantir o usuário inicial:
+
 docker compose exec api npx prisma db seed
-🔍 Como Testar e Acessar
-Swagger (Documentação Interativa): http://localhost:3000/docs
 
-Health Check: http://localhost:3000/health
+🔍 Acessando a API
+Após iniciar a aplicação, os seguintes endpoints estarão disponíveis:
 
-Executar os Testes Automatizados:
+Swagger
+Documentação interativa da API:
 
-Bash
+http://localhost:3000/docs
+
+Health Check
+Endpoint para verificar se a API está funcionando corretamente:
+
+http://localhost:3000/health
+
+🧪 Testes
+Para executar os testes automatizados:
+
 docker compose exec api npm run test
+
+Para executar os testes em modo watch:
+
+docker compose exec api npm run test -- --watch
+
+🗄️ Prisma
+Para acessar o Prisma Studio e visualizar os dados do banco:
+
+docker compose exec api npx prisma studio
+
+Caso seja necessário gerar novamente o Prisma Client:
+
+docker compose exec api npx prisma generate
+
+🐳 Docker
+Parar os containers
+docker compose down
+
+Parar os containers e remover os volumes
+Atenção: isso removerá os dados persistidos do PostgreSQL.
+
+docker compose down -v
+
+Reconstruir a aplicação
+docker compose up -d --build
+
+Verificar os containers em execução
+docker compose ps
+
+📁 Estrutura do Projeto
+Uma estrutura esperada para o projeto é:
+
+minisense-api/
+├── prisma/
+│   ├── migrations/
+│   ├── schema.prisma
+│   └── seed.ts
+├── src/
+│   ├── controllers/
+│   ├── routes/
+│   ├── services/
+│   ├── middlewares/
+│   ├── schemas/
+│   └── server.ts
+├── tests/
+├── .env
+├── .gitignore
+├── Dockerfile
+├── docker-compose.yml
+├── package.json
+├── tsconfig.json
+└── README.md
+
+🔐 Variáveis de Ambiente
+Variável	Descrição	Exemplo
+PORT	Porta utilizada pela API	3000
+DATABASE_URL	URL de conexão com o PostgreSQL	postgresql://postgres:postgres@postgres:5432/meu_projeto?schema=public
+
+Nunca versione informações sensíveis, como senhas, tokens ou chaves privadas. Utilize o .env localmente e mantenha-o no .gitignore.
+
+📚 Principais Endpoints
+A documentação completa dos endpoints está disponível através do Swagger:
+
+http://localhost:3000/docs
+
+A partir dela é possível visualizar, testar e consultar os contratos da API.
+
+❤️ Health Check
+Para verificar rapidamente se a API está disponível:
+
+curl http://localhost:3000/health
+
+📌 Comandos Úteis
+Iniciar a aplicação
+docker compose up -d --build
+
+Ver logs
+docker compose logs -f
+
+Ver status dos containers
+docker compose ps
+
+Executar migrations
+docker compose exec api npx prisma migrate deploy
+
+Executar seed
+docker compose exec api npx prisma db seed
+
+Executar testes
+docker compose exec api npm run test
+
+Abrir Prisma Studio
+docker compose exec api npx prisma studio
+
+Parar a aplicação
+docker compose down
+
+👨‍💻 Desenvolvimento
+Para contribuir com o projeto:
+
+Faça um fork do repositório.
+
+Crie uma branch para sua alteração:
+
+git checkout -b feature/minha-feature
+
+Faça as alterações necessárias.
+
+Execute os testes:
+
+docker compose exec api npm run test
+
+Faça o commit:
+
+git add .
+git commit -m "feat: adiciona minha feature"
+
+Envie a branch:
+
+git push origin feature/minha-feature
+
+Abra um Pull Request.
