@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniSense - Dashboard IoT</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f6f8; margin: 0; padding: 20px; color: #333; }
+    h1, h2, h3 { color: #1a252f; margin-top: 0; }
+    .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    form { display: flex; flex-direction: column; gap: 10px; }
+    input, select, button { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
+    button:hover { background-color: #0056b3; }
+    .device-box { border-left: 4px solid #007bff; background: #fafafa; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+    .stream-box { background: #fff; border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 4px; }
+    .badge { background: #e9ecef; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .measurement-list { font-size: 13px; color: #555; margin-top: 5px; padding-left: 15px; }
+    code { background: #eee; padding: 2px 4px; border-radius: 3px; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+  <h1>📡 MiniSense Dashboard</h1>
+
+  <div class="container">
+    <!-- Coluna da Esquerda: Ações -->
+    <div>
+      <div class="card">
+        <h3>1. Cadastrar Dispositivo</h3>
+        <form id="formDevice">
+          <input type="text" id="devLabel" placeholder="Nome (ex: Freezer Depósito)" required>
+          <input type="text" id="devDesc" placeholder="Descrição (ex: Sensor Arduino)" required>
+          <button type="submit">Criar Dispositivo</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>2. Cadastrar Stream</h3>
+        <form id="formStream">
+          <input type="text" id="stDevKey" placeholder="Key do Dispositivo" required>
+          <input type="text" id="stLabel" placeholder="Nome da Stream (ex: temperature)" required>
+          <select id="stUnit" required>
+            <option value="">Carregando unidades...</option>
+          </select>
+          <button type="submit">Criar Stream</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>3. Publicar Medição</h3>
+        <form id="formMeasurement">
+          <input type="text" id="mStreamKey" placeholder="Key da Stream" required>
+          <input type="number" step="0.01" id="mValue" placeholder="Valor (ex: -6.5)" required>
+          <button type="submit">Enviar Medição</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Coluna da Direita: Lista de Dispositivos -->
+    <div>
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Dispositivos & Sensores</h2>
+          <button onclick="loadDevices()" style="padding: 5px 10px;">🔄 Atualizar</button>
+        </div>
+        <div id="devicesContainer">Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = '/api';
+
+    // Carregar Unidades de Medida no Select
+    async function loadUnits() {
+      const res = await fetch(`${API}/units`);
+      const units = await res.json();
+      const select = document.getElementById('stUnit');
+      select.innerHTML = units.map(u => `<option value="${u.id}">${u.description} (${u.symbol})</option>`).join('');
+    }
+
+    // Carregar Dispositivos e Medições
+    async function loadDevices() {
+      const container = document.getElementById('devicesContainer');
+      const res = await fetch(`${API}/devices`);
+      const devices = await res.json();
+
+      if (devices.length === 0) {
+        container.innerHTML = '<p>Nenhum dispositivo cadastrado ainda.</p>';
+        return;
+      }
+
+      let html = '';
+      for (const dev of devices) {
+        // Buscar detalhes com medições
+        const devRes = await fetch(`${API}/devices/${dev.key}`);
+        const devDetail = await devRes.json();
+
+        html += `
+          <div class="device-box">
+            <h3>${devDetail.label}</h3>
+            <p style="margin: 5px 0;">${devDetail.description || ''}</p>
+            <p><code>Key: ${devDetail.key}</code></p>
+            
+            <strong>Streams:</strong>
+            ${devDetail.streams.map(st => `
+              <div class="stream-box">
+                <div><strong>${st.label}</strong> <span class="badge">Unidade ID: ${st.unitId}</span></div>
+                <div><code>Key: ${st.key}</code></div>
+                <div>Total de leituras: ${st.measurementCount}</div>
+                
+                <div class="measurement-list">
+                  <strong>Últimas 5 medições:</strong>
+                  <ul>
+                    ${(st.measurements || []).map(m => `
+                      <li>${m.value} em ${new Date(m.timestamp * 1000).toLocaleString('pt-BR')}</li>
+                    `).join('') || '<li>Nenhuma leitura enviada</li>'}
+                  </ul>
+                </div>
+              </div>
+            `).join('') || '<p>Nenhuma stream cadastrada.</p>'}
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    // Handlers dos Formulários
+    document.getElementById('formDevice').onsubmit = async (e) => {
+      e.preventDefault();
+      await fetch(`${API}/devices`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          label: document.getElementById('devLabel').value,
+          description: document.getElementById('devDesc').value
+        })
+      });
+      e.target.reset();
+      loadDevices();
+    };
+
+    document.getElementById('formStream').onsubmit = async (e) => {
+      e.preventDefault();
+      const devKey = document.getElementById('stDevKey').value;
+      await fetch(`${API}/devices/${devKey}/streams`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          label: document.getElementById('stLabel').value,
+          unitId: Number(document.getElementById('stUnit').value)
+        })
+      });
+      e.target.reset();
+      loadDevices();
+    };
+
+    document.getElementById('formMeasurement').onsubmit = async (e) => {
+      e.preventDefault();
+      const streamKey = document.getElementById('mStreamKey').value;
+      await fetch(`${API}/streams/${streamKey}/measurements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          timestamp: Math.floor(Date.now() / 1000),
+          value: Number(document.getElementById('mValue').value)
+        })
+      });
+      e.target.reset();
+      loadDevices();
+    };
+
+    // Inicialização
+    loadUnits();
+    loadDevices();
+  </script>
+</body>
+</html>

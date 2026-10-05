@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int            @id @default(autoincrement())
+  name      String
+  email     String         @unique
+  devices   SensorDevice[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model MeasurementUnit {
+  id          Int          @id @default(autoincrement())
+  symbol      String
+  description String
+  streams     DataStream[]
+}
+
+model SensorDevice {
+  id          Int          @id @default(autoincrement())
+  key         String       @unique @default(uuid())
+  label       String
+  description String?
+  userId      Int
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  streams     DataStream[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model DataStream {
+  id               Int             @id @default(autoincrement())
+  key              String          @unique @default(uuid())
+  label            String
+  enabled          Boolean         @default(true)
+  deviceId         Int
+  device           SensorDevice    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  unitId           Int
+  unit             MeasurementUnit @relation(fields: [unitId], references: [id])
+  measurements     SensorData[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model SensorData {
+  id        Int        @id @default(autoincrement())
+  timestamp BigInt
+  value     Float
+  streamId  Int
+  stream    DataStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+}
